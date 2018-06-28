@@ -1,21 +1,37 @@
 package jp.co.pise.projecttemplate_android.Presentation.View.Fragment;
 
+import android.app.Activity;
 import android.app.Fragment;
+import android.content.res.ColorStateList;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.app.FragmentActivity;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.Editable;
+import android.text.InputType;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.facebook.stetho.Stetho;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -27,12 +43,17 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.reactivex.Emitter;
+import io.reactivex.Observable;
+import io.reactivex.android.plugins.RxAndroidPlugins;
 import jp.co.pise.projecttemplate_android.Data.Entities.PokemonEntity;
 import jp.co.pise.projecttemplate_android.Data.Entities.TypeEntity;
+import jp.co.pise.projecttemplate_android.Data.ValueObject.TemplateApplicationContext;
 import jp.co.pise.projecttemplate_android.Domain.Models.TopFragmentModel;
 import jp.co.pise.projecttemplate_android.Presentation.Event.Activity.MainActivityAsyncEvent;
 import jp.co.pise.projecttemplate_android.Presentation.Event.Fragment.TopFragmentAsyncEvent;
 import jp.co.pise.projecttemplate_android.Presentation.Presenter.Fragment.TopFragmentPresenter;
+import jp.co.pise.projecttemplate_android.Presentation.View.UIHelper.CommonUiHelper;
 import jp.co.pise.projecttemplate_android.R;
 import jp.co.pise.projecttemplate_android.databinding.TopFragmentBinding;
 
@@ -43,6 +64,8 @@ public class TopFragment extends Fragment {
     TopFragmentPresenter presenter;
     PokemonListAdapter pkmAdapter;
     LinearLayoutManager linearLayoutManager;
+    Emitter<String> searchEmitter;
+    int lastState = 0;
 
 
 
@@ -51,11 +74,24 @@ public class TopFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, Bundle savedInstanceState) {
 //        return super.onCreateView(inflater, container, savedInstanceState);
         View view = inflater.inflate(R.layout.top_fragment, container, false);
+        ((TextView) view.findViewById(R.id.titleLabel)).setText("POKéDEX");
+        view.findViewById(R.id.notiButton).setOnClickListener((v) -> {
+            if (view.findViewById(R.id.search_et).getVisibility() == View.GONE) {
+                view.findViewById(R.id.search_et).setVisibility(View.VISIBLE);
+                Animation anim = AnimationUtils.loadAnimation(getActivity(), R.anim.search_bar_pop_out);
+                view.findViewById(R.id.search_et).startAnimation(anim);
+            } else {
+                view.findViewById(R.id.search_et).setVisibility(View.GONE);
+                Animation anim = AnimationUtils.loadAnimation(getActivity(), R.anim.search_bar_pop_in);
+                view.findViewById(R.id.search_et).startAnimation(anim);
+            }
+
+        });
         RecyclerView rv = (RecyclerView) view.findViewById(R.id.pkmRv);
         pkmAdapter = new PokemonListAdapter();
         linearLayoutManager = new LinearLayoutManager(getActivity());
         rv.setLayoutManager(linearLayoutManager);
-
+        Stetho.initializeWithDefaults(this.getActivity());
         rv.setAdapter(pkmAdapter);
         return  view;
     }
@@ -64,7 +100,34 @@ public class TopFragment extends Fragment {
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         binding = TopFragmentBinding.bind(getView());
-        presenter = new TopFragmentPresenter();
+
+        EditText searchText = (EditText) getView().findViewById(R.id.search_et);
+        Observable<String> searchTextOb = Observable.create(emitter -> {
+            searchEmitter = emitter;
+            try {
+                searchText.addTextChangedListener(new TextWatcher() {
+                    @Override
+                    public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+                    }
+
+                    @Override
+                    public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+                    }
+
+                    @Override
+                    public void afterTextChanged(Editable editable) {
+                        emitter.onNext(editable.toString());
+                    }
+                });
+
+            } catch (Exception e) {
+                emitter.onError(e);
+                emitter.onComplete();
+            }
+        });
+        presenter = new TopFragmentPresenter(searchTextOb);
         presenter.topFragment = this;
 
         binding.setModel(presenter.GetModel());
@@ -96,10 +159,21 @@ public class TopFragment extends Fragment {
     {
         if(event.IsSuccess())
         {
-            Toast.makeText(this.getActivity(), "成功！", Toast.LENGTH_SHORT).show();
+            if (event.eventType == TopFragmentAsyncEvent.EventType.LoadPokeComplete) {
+                if (event.loadedPoke == null) {
+                    pkmAdapter.notifyDataSetChanged();
+                } else {
+                    if (((EditText)getView().findViewById(R.id.search_et)).getText().toString().equals("")) {
+                        pkmAdapter.notifyItemChanged(pkmAdapter.datas.size() - 1);
+                    } else {
+                        searchEmitter.onNext(((EditText)getView().findViewById(R.id.search_et)).getText().toString());
+                    }
+
+                }
+            }
         }
 
-        EventBus.getDefault().post(new MainActivityAsyncEvent(MainActivityAsyncEvent.EventType.UserRegistComplete));
+        //EventBus.getDefault().post(new MainActivityAsyncEvent(MainActivityAsyncEvent.EventType.UserRegistComplete));
     }
 
     public static class PokemonListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
@@ -128,26 +202,47 @@ public class TopFragment extends Fragment {
 
         @Override
         public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-            if (datas.get(position).getId() != 0) {
-                ((TextView)((ViewHolder)holder).cell.findViewById(R.id.tvPkmName)).setText(datas.get(position).getName());
-                String type = "";
-                for (TypeEntity te: datas.get(position).getTypes()
-                     ) {
-                    type = type + te.getType().getName() + " ";
-                }
-                ((TextView)((ViewHolder)holder).cell.findViewById(R.id.tvType)).setText(type);
-                //((TextView)((ViewHolder)holder).cell.findViewById(R.id.tvDescription)).setText(datas.get(position).getDescriptions().get(0).getDescription());
+            if (datas == null || datas.get(position) == null) {
+                return;
+            }
+            try {
+                if (datas.get(position).getId() != 0) {
+                    ((TextView)((ViewHolder)holder).cell.findViewById(R.id.tvPkmName)).setText(datas.get(position).getName().toUpperCase());
+                    String type1 = datas.get(position).types.get(0).type.getName();
+                    String type2 = datas.get(position).types.size() > 1 ? datas.get(position).types.get(1).type.getName() : "";
+                    ((TextView)((ViewHolder)holder).cell.findViewById(R.id.tvType)).setText(type1.toUpperCase());
+                    ((TextView)((ViewHolder)holder).cell.findViewById(R.id.tvType)).setBackground(GetTintedDrawable(TemplateApplicationContext.Context.getResources(),
+                            R.drawable.curl_border, Color.parseColor(CommonUiHelper.getTypeColor(type1))));
+                    if (!type2.equals("")) {
+                        ((TextView)((ViewHolder)holder).cell.findViewById(R.id.tvType2)).setVisibility(View.VISIBLE);
+                        ((TextView)((ViewHolder)holder).cell.findViewById(R.id.tvType2)).setText(type2.toUpperCase());
+                        ((TextView)((ViewHolder)holder).cell.findViewById(R.id.tvType2)).setBackground(GetTintedDrawable(TemplateApplicationContext.Context.getResources(),
+                                R.drawable.curl_border, Color.parseColor(CommonUiHelper.getTypeColor(type2))));
+                    } else {
+                        ((TextView)((ViewHolder)holder).cell.findViewById(R.id.tvType2)).setVisibility(View.INVISIBLE);
+                    }
+                    //((TextView)((ViewHolder)holder).cell.findViewById(R.id.tvDescription)).setText(datas.get(position).getDescriptions().get(0).getDescription());
 
-                try {
-                    URL url = null;
-                    url = new URL("https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/"+ (position + 1) + ".png");
-                    new DownloadImageTask(((ImageView)((ViewHolder)holder).cell.findViewById(R.id.ivPkm)), datas.get(position)).execute(url.toString());
-                } catch (MalformedURLException e) {
-                    e.printStackTrace();
+                    ((ImageView)((ViewHolder)holder).cell.findViewById(R.id.ivPkm)).setImageBitmap(datas.get(position).image);
+                } else {
+                    ((TextView)((ViewHolder)holder).cell.findViewById(R.id.tvPkmName)).setText("取得中");
+                    ((TextView)((ViewHolder)holder).cell.findViewById(R.id.tvType)).setText("...");
+                    ((ImageView)((ViewHolder)holder).cell.findViewById(R.id.ivPkm)).setImageBitmap(null);
+                    ((TextView)((ViewHolder)holder).cell.findViewById(R.id.tvType)).setBackgroundColor(Color.TRANSPARENT);
+                    ((TextView)((ViewHolder)holder).cell.findViewById(R.id.tvType2)).setBackgroundColor(Color.TRANSPARENT);
                 }
             }
+            catch (Exception e) {
+                Log.e("ERROR", e.getMessage());
+            }
 
+        }
 
+        public Drawable GetTintedDrawable(Resources res, int drawableResId, int colorId)
+        {
+            Drawable drawable = res.getDrawable(drawableResId);
+            drawable.setColorFilter(colorId, PorterDuff.Mode.SRC_IN);
+            return drawable;
         }
 
         @Override
@@ -166,36 +261,4 @@ public class TopFragment extends Fragment {
         pkmAdapter.notifyDataSetChanged();
     }
 
-    private static class DownloadImageTask extends AsyncTask<String, Void, Bitmap> {
-        ImageView bmImage;
-        PokemonEntity pokemonEntity;
-
-        public DownloadImageTask(ImageView bmImage, PokemonEntity pokemonEntity) {
-            this.pokemonEntity = pokemonEntity;
-            this.bmImage = bmImage;
-        }
-
-        protected Bitmap doInBackground(String... urls) {
-            if (pokemonEntity.image == null) {
-                String urldisplay = urls[0];
-                Bitmap mIcon11 = null;
-                try {
-                    InputStream in = new java.net.URL(urldisplay).openStream();
-                    mIcon11 = BitmapFactory.decodeStream(in);
-                } catch (Exception e) {
-                    Log.e("Error", e.getMessage());
-                    e.printStackTrace();
-                }
-                pokemonEntity.image = mIcon11;
-                return mIcon11;
-            } else {
-                return pokemonEntity.image;
-            }
-
-        }
-
-        protected void onPostExecute(Bitmap result) {
-            bmImage.setImageBitmap(result);
-        }
-    }
 }

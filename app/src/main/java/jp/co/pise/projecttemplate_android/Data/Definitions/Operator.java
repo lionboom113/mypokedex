@@ -8,4 +8,5 @@ public class Operator {
     static public final String EQUAL = "=";
     static public final String OVER = ">";
     static public final String BELOW = "<";
+    static public final String LIKE = "LIKE";
 }

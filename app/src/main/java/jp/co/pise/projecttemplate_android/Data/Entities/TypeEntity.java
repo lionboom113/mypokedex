@@ -6,7 +6,7 @@ import com.github.gfx.android.orma.annotation.Table;
 
 @Table
 public class TypeEntity {
-    @PrimaryKey
+    @PrimaryKey(autoincrement = false)
     public String typeName;
 
     @Column

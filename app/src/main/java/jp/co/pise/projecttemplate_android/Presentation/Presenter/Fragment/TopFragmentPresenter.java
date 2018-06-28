@@ -8,7 +8,9 @@ import org.reactivestreams.Subscription;
 
 import java.util.ArrayList;
 
+import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
 import io.reactivex.observers.DisposableObserver;
 import io.reactivex.schedulers.Schedulers;
 import jp.co.pise.projecttemplate_android.Data.Entities.PokemonEntity;
@@ -35,36 +37,90 @@ public class TopFragmentPresenter implements IPresenter {
     public TopFragment topFragment;
 
 
-    public TopFragmentPresenter(){
+    public TopFragmentPresenter(Observable<String> searchText){
         model = new TopFragmentModel();
+        model.searchText = searchText;
         model.Title = "たいとるだよ";
         model.pkms = new ArrayList<PokemonEntity>();
-        for(int i=1;i<=10;i++) {
-            model.pkms.add(new PokemonEntity());
-        }
         pkmManager = new PokemonManager();
-        for(int i=1;i<=10;i++) {
-            int finalI = i;
-            pkmManager.getPokemon(i + "").subscribeOn(Schedulers.io()) // optional if you do not wish to override the default behavior
-                    .observeOn(AndroidSchedulers.mainThread()).subscribe(new DisposableObserver<PokemonEntity>() {
-                @Override
-                public void onNext(PokemonEntity pokemonEntity) {
-                    model.pkms.set(finalI - 1, pokemonEntity);
-                    topFragment.dataUpdate();
-                }
-
-                @Override
-                public void onError(Throwable e) {
-                    Log.e("ERORR", e.getMessage());
-                }
-
-                @Override
-                public void onComplete() {
-
-                }
-            });
-        }
+        int i = 1;
+        int finalI = i;
+        fetchPkm(1);
         userManager = new UserManager();
+        consumeObs(pkmManager.searchPokemon(""));
+        searchText.subscribe(new DisposableObserver<String>() {
+            @Override
+            protected void onStart() {
+                super.onStart();
+                Log.d("Search-start", "Search start");
+            }
+
+            @Override
+            public void onNext(String s) {
+                if (s.isEmpty()) {
+                    //load default list
+//                    model.pkms.removeAll(model.pkms);
+//                    fetchPkm(1);
+                }
+                consumeObs(pkmManager.searchPokemon(s));
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                Log.d("Search-error", "Search cause error");
+            }
+
+            @Override
+            public void onComplete() {
+                Log.d("Search-error", "Search cause error");
+            }
+        });
+    }
+
+    public void consumeObs(Observable<PokemonEntity> pkmeObs) {
+        model.pkms.removeAll(model.pkms);
+        pkmeObs.subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread()).subscribe(new DisposableObserver<PokemonEntity>() {
+            @Override
+            public void onNext(PokemonEntity pokemonEntity) {
+                model.pkms.add(pokemonEntity);
+                EventBus.getDefault().post(TopFragmentAsyncEvent.loadPokeComplete(null));
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                Log.e("ERORR", e.getMessage());
+            }
+
+            @Override
+            public void onComplete() {
+                //continue to load until get 100 pkm :3
+
+            }
+        });
+    }
+
+    public void fetchPkm(int i) {
+        pkmManager.getPokemon(i + "").subscribeOn(Schedulers.io()) // optional if you do not wish to override the default behavior
+                .observeOn(AndroidSchedulers.mainThread()).subscribe(new DisposableObserver<PokemonEntity>() {
+            @Override
+            public void onNext(PokemonEntity pokemonEntity) {
+                //EventBus.getDefault().post(TopFragmentAsyncEvent.loadPokeComplete(pokemonEntity));
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                Log.e("ERORR", e.getMessage());
+            }
+
+            @Override
+            public void onComplete() {
+                //continue to load until get 100 pkm :3
+                if (i < 50) {
+                    int y = i + 1;
+                    fetchPkm(y);
+                }
+            }
+        });
     }
 
     public void RegistUser(String name)

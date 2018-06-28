@@ -13,7 +13,10 @@
     <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
         android:orientation="vertical" android:layout_width="match_parent"
         android:layout_height="match_parent">
-
+        <include android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            layout="@layout/nav_bar"
+            android:id="@+id/navBar"/>
         <TextView
             android:text="@{model.Title}"
             android:visibility="gone"
@@ -28,6 +31,7 @@
 
         <Button
             android:text="登録"
+            android:visibility="gone"
             android:onClick="@{fragment.RegistUser}"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
@@ -35,6 +39,8 @@
         <android.support.v7.widget.RecyclerView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:paddingLeft="@dimen/activity_horizontal_margin"
+            android:paddingRight="@dimen/activity_horizontal_margin"
             android:id="@+id/pkmRv"></android.support.v7.widget.RecyclerView>
 
     </LinearLayout>

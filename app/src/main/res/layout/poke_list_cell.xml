@@ -2,12 +2,13 @@
 <android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:paddingTop="10dp"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <ImageView
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
         android:id="@+id/ivPkm"/>
     <TextView
         android:layout_width="wrap_content"
@@ -15,8 +16,9 @@
         app:layout_constraintLeft_toRightOf="@id/ivPkm"
         app:layout_constraintTop_toTopOf="parent"
         android:layout_marginLeft="10dp"
-        android:text="bulbasaur"
-        android:textColor="@color/colorPrimaryDark"
+        android:text="データ取得中"
+        android:inputType="textCapWords"
+        android:textColor="#37474f"
         android:textSize="15sp"
         android:id="@+id/tvPkmName"/>
     <TextView
@@ -26,8 +28,30 @@
         app:layout_constraintLeft_toRightOf="@id/ivPkm"
         app:layout_constraintTop_toBottomOf="@id/tvPkmName"
         android:layout_marginTop="10dp"
-        android:text="type"
+        android:text="。。。"
+        android:paddingLeft="10dp"
+        android:paddingRight="10dp"
+        android:textColor="#fff"
+        android:paddingTop="3dp"
+        android:paddingBottom="3dp"
+        android:background="@drawable/curl_border"
+        android:textSize="10sp"
         android:id="@+id/tvType"/>
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="10dp"
+        app:layout_constraintLeft_toRightOf="@id/tvType"
+        app:layout_constraintTop_toBottomOf="@id/tvPkmName"
+        android:layout_marginTop="10dp"
+        android:text="。。。"
+        android:paddingLeft="10dp"
+        android:paddingRight="10dp"
+        android:textColor="#fff"
+        android:paddingTop="3dp"
+        android:paddingBottom="3dp"
+        android:textSize="10sp"
+        android:id="@+id/tvType2"/>
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -37,6 +61,18 @@
         android:layout_marginTop="10dp"
         android:text=""
         android:id="@+id/tvDescription"/>
-
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1px"
+        android:background="#e19599"
+        android:id="@+id/splitter"
+        app:layout_constraintTop_toBottomOf="@id/tvDescription"
+        />
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="2px"
+        android:background="#e7abaf"
+        app:layout_constraintTop_toBottomOf="@id/splitter"
+        />
 
 </android.support.constraint.ConstraintLayout>

@@ -19,6 +19,8 @@ public class OrmaRepositoryConditions {
             case Operator.BELOW:
                 result = below(condition.key, condition.value);
                 break;
+            case Operator.LIKE:
+                result = build(condition.key,"'" + condition.value + "'", "LIKE");
         }
         return result;
     }

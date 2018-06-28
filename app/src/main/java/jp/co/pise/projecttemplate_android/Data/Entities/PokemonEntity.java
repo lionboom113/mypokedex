@@ -11,11 +11,14 @@ import java.util.List;
 
 @Table
 public class PokemonEntity {
-    @PrimaryKey(autoincrement = false)
+    @Column()
     public int id;
 
-    @Column()
+    @PrimaryKey()
     public String name;
+
+    @Column()
+    public String imageEncoded;
 
     public List<DescriptionEntity> descriptions;
 
