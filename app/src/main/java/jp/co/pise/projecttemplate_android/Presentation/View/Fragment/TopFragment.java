@@ -1,7 +1,10 @@
 package jp.co.pise.projecttemplate_android.Presentation.View.Fragment;
 
 import android.app.Activity;
+import android.app.ActivityOptions;
 import android.app.Fragment;
+import android.app.SharedElementCallback;
+import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
@@ -13,17 +16,22 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.view.ViewCompat;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.TextWatcher;
+import android.transition.Explode;
 import android.util.Log;
+import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.EditText;
@@ -35,6 +43,7 @@ import com.facebook.stetho.Stetho;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -42,6 +51,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import io.reactivex.Emitter;
 import io.reactivex.Observable;
@@ -53,9 +63,12 @@ import jp.co.pise.projecttemplate_android.Domain.Models.TopFragmentModel;
 import jp.co.pise.projecttemplate_android.Presentation.Event.Activity.MainActivityAsyncEvent;
 import jp.co.pise.projecttemplate_android.Presentation.Event.Fragment.TopFragmentAsyncEvent;
 import jp.co.pise.projecttemplate_android.Presentation.Presenter.Fragment.TopFragmentPresenter;
+import jp.co.pise.projecttemplate_android.Presentation.View.Activity.PokemonDetailActivity;
 import jp.co.pise.projecttemplate_android.Presentation.View.UIHelper.CommonUiHelper;
 import jp.co.pise.projecttemplate_android.R;
 import jp.co.pise.projecttemplate_android.databinding.TopFragmentBinding;
+
+import static jp.co.pise.projecttemplate_android.Presentation.View.UIHelper.CommonUiHelper.GetTintedDrawable;
 
 public class TopFragment extends Fragment {
 
@@ -93,12 +106,15 @@ public class TopFragment extends Fragment {
         rv.setLayoutManager(linearLayoutManager);
         Stetho.initializeWithDefaults(this.getActivity());
         rv.setAdapter(pkmAdapter);
+
+
         return  view;
     }
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
+
         binding = TopFragmentBinding.bind(getView());
 
         EditText searchText = (EditText) getView().findViewById(R.id.search_et);
@@ -154,7 +170,7 @@ public class TopFragment extends Fragment {
         presenter.RegistUser(binding.name.getText().toString());
     }
 
-    @Subscribe
+    @Subscribe(threadMode = ThreadMode.MAIN)
     public void onModelUpdate(TopFragmentAsyncEvent event)
     {
         if(event.IsSuccess())
@@ -163,13 +179,20 @@ public class TopFragment extends Fragment {
                 if (event.loadedPoke == null) {
                     pkmAdapter.notifyDataSetChanged();
                 } else {
-                    if (((EditText)getView().findViewById(R.id.search_et)).getText().toString().equals("")) {
-                        pkmAdapter.notifyItemChanged(pkmAdapter.datas.size() - 1);
-                    } else {
-                        searchEmitter.onNext(((EditText)getView().findViewById(R.id.search_et)).getText().toString());
-                    }
+//                    if (((EditText)getView().findViewById(R.id.search_et)).getText().toString().equals("")) {
+//                        pkmAdapter.notifyItemChanged(pkmAdapter.datas.size() - 1);
+//                    } else {
+//                        searchEmitter.onNext(((EditText)getView().findViewById(R.id.search_et)).getText().toString());
+//                    }
 
                 }
+            }
+            if (event.eventType == TopFragmentAsyncEvent.EventType.AddedPokeToList) {
+                pkmAdapter.notifyItemInserted(pkmAdapter.datas.size() - 1);
+                showSnackBar(event.loadedPoke.getName().toUpperCase() + " was added.");
+            }
+            if (event.eventType == TopFragmentAsyncEvent.EventType.PokemonTap) {
+                onPokemonTap(event.view, event.loadedPoke);
             }
         }
 
@@ -224,6 +247,9 @@ public class TopFragment extends Fragment {
                     //((TextView)((ViewHolder)holder).cell.findViewById(R.id.tvDescription)).setText(datas.get(position).getDescriptions().get(0).getDescription());
 
                     ((ImageView)((ViewHolder)holder).cell.findViewById(R.id.ivPkm)).setImageBitmap(datas.get(position).image);
+                    ((ViewHolder) holder).cell.setOnClickListener(v -> {
+                        EventBus.getDefault().post(TopFragmentAsyncEvent.pokemonTap(datas.get(position), v));
+                    });
                 } else {
                     ((TextView)((ViewHolder)holder).cell.findViewById(R.id.tvPkmName)).setText("取得中");
                     ((TextView)((ViewHolder)holder).cell.findViewById(R.id.tvType)).setText("...");
@@ -238,12 +264,7 @@ public class TopFragment extends Fragment {
 
         }
 
-        public Drawable GetTintedDrawable(Resources res, int drawableResId, int colorId)
-        {
-            Drawable drawable = res.getDrawable(drawableResId);
-            drawable.setColorFilter(colorId, PorterDuff.Mode.SRC_IN);
-            return drawable;
-        }
+
 
         @Override
         public int getItemCount() {
@@ -259,6 +280,25 @@ public class TopFragment extends Fragment {
     public void dataUpdate() {
         pkmAdapter.datas = presenter.GetModel().pkms;
         pkmAdapter.notifyDataSetChanged();
+    }
+
+    public void showSnackBar(String text) {
+        Snackbar snackbar = Snackbar
+                .make(getView(),text, Snackbar.LENGTH_LONG);
+
+        snackbar.show();
+    }
+
+    public void onPokemonTap(View view, PokemonEntity pokemonEntity) {
+        Intent intent = new Intent(this.getActivity(), PokemonDetailActivity.class);
+        intent.putExtra("id", pokemonEntity.getId() + "");
+
+        ActivityOptions options = ActivityOptions
+                .makeSceneTransitionAnimation(getActivity(), Pair.create(view.findViewById(R.id.ivPkm), "robot"),
+                        Pair.create(view.findViewById(R.id.tvPkmName), "name"));
+
+        startActivity(intent, options.toBundle());
+
     }
 
 }

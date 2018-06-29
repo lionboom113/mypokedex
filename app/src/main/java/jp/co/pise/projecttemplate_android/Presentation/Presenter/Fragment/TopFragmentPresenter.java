@@ -1,8 +1,10 @@
 package jp.co.pise.projecttemplate_android.Presentation.Presenter.Fragment;
 
 import android.util.Log;
+import android.widget.EditText;
 
 import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
@@ -22,6 +24,7 @@ import jp.co.pise.projecttemplate_android.Presentation.Event.Activity.MainActivi
 import jp.co.pise.projecttemplate_android.Presentation.Event.Fragment.TopFragmentAsyncEvent;
 import jp.co.pise.projecttemplate_android.Presentation.Presenter.IPresenter;
 import jp.co.pise.projecttemplate_android.Presentation.View.Fragment.TopFragment;
+import jp.co.pise.projecttemplate_android.R;
 
 public class TopFragmentPresenter implements IPresenter {
 
@@ -34,10 +37,12 @@ public class TopFragmentPresenter implements IPresenter {
     TopFragmentModel model;
     UserManager userManager;
     PokemonManager pkmManager;
+    String currentQuery = "";
     public TopFragment topFragment;
 
 
     public TopFragmentPresenter(Observable<String> searchText){
+        EventBus.getDefault().register(this);
         model = new TopFragmentModel();
         model.searchText = searchText;
         model.Title = "たいとるだよ";
@@ -62,6 +67,7 @@ public class TopFragmentPresenter implements IPresenter {
 //                    model.pkms.removeAll(model.pkms);
 //                    fetchPkm(1);
                 }
+                currentQuery = s;
                 consumeObs(pkmManager.searchPokemon(s));
             }
 
@@ -83,7 +89,7 @@ public class TopFragmentPresenter implements IPresenter {
             @Override
             public void onNext(PokemonEntity pokemonEntity) {
                 model.pkms.add(pokemonEntity);
-                EventBus.getDefault().post(TopFragmentAsyncEvent.loadPokeComplete(null));
+
             }
 
             @Override
@@ -94,6 +100,7 @@ public class TopFragmentPresenter implements IPresenter {
             @Override
             public void onComplete() {
                 //continue to load until get 100 pkm :3
+                EventBus.getDefault().post(TopFragmentAsyncEvent.loadPokeComplete(null));
 
             }
         });
@@ -115,7 +122,7 @@ public class TopFragmentPresenter implements IPresenter {
             @Override
             public void onComplete() {
                 //continue to load until get 100 pkm :3
-                if (i < 50) {
+                if (i < 10) {
                     int y = i + 1;
                     fetchPkm(y);
                 }
@@ -127,6 +134,29 @@ public class TopFragmentPresenter implements IPresenter {
     {
         userManager.RegistUser(new UserEntity(name));
         EventBus.getDefault().post(new TopFragmentAsyncEvent(TopFragmentAsyncEvent.EventType.UserRegistComplete));
+    }
+
+    @Subscribe
+    public void onModelUpdate(TopFragmentAsyncEvent event)
+    {
+        if(event.IsSuccess())
+        {
+            if (event.eventType == TopFragmentAsyncEvent.EventType.LoadPokeComplete) {
+                if (event.loadedPoke != null) {
+                    if (event.loadedPoke.getName().contains(currentQuery)) {
+                        if (currentQuery.isEmpty()) {
+                            model.pkms.add(event.loadedPoke);
+                            EventBus.getDefault().post(TopFragmentAsyncEvent.newPokeAdded(event.loadedPoke));
+                        } else {
+                            model.pkms.add(event.loadedPoke);
+                            EventBus.getDefault().post(TopFragmentAsyncEvent.newPokeAdded(event.loadedPoke));
+                        }
+                    }
+                }
+            }
+        }
+
+        //EventBus.getDefault().post(new MainActivityAsyncEvent(MainActivityAsyncEvent.EventType.UserRegistComplete));
     }
 
     public TopFragmentModel GetModel(){

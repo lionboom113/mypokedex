@@ -20,6 +20,15 @@ public class PokemonEntity {
     @Column()
     public String imageEncoded;
 
+    @Column
+    public int height;
+
+    @Column
+    public int weight;
+
+    @Column
+    public int base_experience;
+
     public List<DescriptionEntity> descriptions;
 
     public List<TypeEntity> types = new ArrayList<TypeEntity>();

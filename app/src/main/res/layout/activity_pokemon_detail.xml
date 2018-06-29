@@ -5,5 +5,57 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context="jp.co.pise.projecttemplate_android.Presentation.View.Activity.PokemonDetailActivity">
-
+    <ImageView
+        android:layout_marginTop="20dp"
+        android:layout_marginLeft="20dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        android:layout_width="50dp"
+        android:transitionName="robot"
+        android:layout_height="50dp"
+        android:id="@+id/ivPkm"/>
+    <TextView
+        android:layout_marginTop="20dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintLeft_toRightOf="@id/ivPkm"
+        app:layout_constraintTop_toTopOf="parent"
+        android:layout_marginLeft="10dp"
+        android:text="データ取得中"
+        android:transitionName="name"
+        android:inputType="textCapWords"
+        android:textColor="#37474f"
+        android:textSize="15sp"
+        android:id="@+id/tvPkmName"/>
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="10dp"
+        app:layout_constraintLeft_toRightOf="@id/ivPkm"
+        app:layout_constraintTop_toBottomOf="@id/tvPkmName"
+        android:layout_marginTop="10dp"
+        android:text="。。。"
+        android:paddingLeft="10dp"
+        android:paddingRight="10dp"
+        android:textColor="#fff"
+        android:paddingTop="3dp"
+        android:paddingBottom="3dp"
+        android:background="@drawable/curl_border"
+        android:textSize="10sp"
+        android:id="@+id/tvType"/>
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="10dp"
+        app:layout_constraintLeft_toRightOf="@id/tvType"
+        app:layout_constraintTop_toBottomOf="@id/tvPkmName"
+        android:layout_marginTop="10dp"
+        android:text="。。。"
+        android:paddingLeft="10dp"
+        android:paddingRight="10dp"
+        android:textColor="#fff"
+        android:paddingTop="3dp"
+        android:paddingBottom="3dp"
+        android:textSize="10sp"
+        android:id="@+id/tvType2"/>
 </android.support.constraint.ConstraintLayout>

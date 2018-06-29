@@ -3,16 +3,17 @@ package jp.co.pise.projecttemplate_android.Presentation.Event.Activity;
 import jp.co.pise.projecttemplate_android.Presentation.Event.AsyncEvent;
 import jp.co.pise.projecttemplate_android.Presentation.Event.IEventType;
 
-public class MainActivityAsyncEvent extends AsyncEvent {
+public class PokemonDetailAsyncEvent extends AsyncEvent {
 
     public enum EventType implements IEventType
     {
         None,
         UserRegistComplete,
+        LoadDataComplete
     }
 
-    public MainActivityAsyncEvent(EventType type){
-        isSuccess = false;
+    public PokemonDetailAsyncEvent(EventType type){
+        isSuccess = true;
         this.eventType = type;
     }
 

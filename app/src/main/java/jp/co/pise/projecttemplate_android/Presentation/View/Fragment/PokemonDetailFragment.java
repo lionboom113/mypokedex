@@ -1,12 +1,18 @@
-package jp.co.pise.projecttemplate_android.Presentation.Presenter.Fragment;
+package jp.co.pise.projecttemplate_android.Presentation.View.Fragment;
 
+import android.app.SharedElementCallback;
 import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
+import android.app.Fragment;
+import android.transition.Transition;
+import android.transition.TransitionInflater;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+
+import java.util.List;
+import java.util.Map;
 
 import jp.co.pise.projecttemplate_android.R;
 
@@ -64,8 +70,9 @@ public class PokemonDetailFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.fragment_pokemon_detail, container, false);
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_pokemon_detail, container, false);
+        return view;
     }
 
     // TODO: Rename method, update argument and hook method into UI event
@@ -81,8 +88,7 @@ public class PokemonDetailFragment extends Fragment {
         if (context instanceof OnFragmentInteractionListener) {
             mListener = (OnFragmentInteractionListener) context;
         } else {
-            throw new RuntimeException(context.toString()
-                    + " must implement OnFragmentInteractionListener");
+
         }
     }
 

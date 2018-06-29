@@ -1,6 +1,9 @@
 package jp.co.pise.projecttemplate_android.Presentation.View.UIHelper;
 
+import android.content.res.Resources;
 import android.graphics.Color;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
 
 public class CommonUiHelper {
     public static String getTypeColor(String type) {
@@ -19,5 +22,11 @@ public class CommonUiHelper {
                 color = "#444444";
         }
         return color;
+    }
+    public static Drawable GetTintedDrawable(Resources res, int drawableResId, int colorId)
+    {
+        Drawable drawable = res.getDrawable(drawableResId);
+        drawable.setColorFilter(colorId, PorterDuff.Mode.SRC_IN);
+        return drawable;
     }
 }
